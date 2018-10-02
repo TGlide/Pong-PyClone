@@ -52,7 +52,7 @@ def font_path(name):
 
 
 class Ball(Sprite):
-    base_speed = 800
+    base_speed = 1000
 
     def __init__(self):
         Sprite.__init__(self, os.path.realpath(__file__)[
@@ -88,7 +88,7 @@ class Paddle(Sprite):
 
 
 class PaddleCPU(Paddle):
-    base_speed = 1000
+    base_speed = 500
 
     def move(self, ball):
         speed = self.base_speed * wn.delta_time()
@@ -115,8 +115,8 @@ class Score(Font):
 
 GAME_STATE = 1
 SPEED_MULT = 1.1
-SPEED_ADD = 100
-SPEED_MAX = 3000
+SPEED_ADD = 50
+SPEED_MAX = 2500
 last_speed = 0
 WIN_W = 1200
 WIN_H = 800
@@ -155,15 +155,20 @@ fundo = GameImage(os.path.realpath(__file__)[
 ball = Ball()
 ballPred = Sprite(os.path.realpath(__file__)[
                         :-(len("pong.py"))] + "assets" + os.sep + "ball_pred.png")
-paddlePlayer = PaddleCPU()
-paddlePlayer.prediction = wn.height/2 - ball.height/2
-# paddlePlayer = Paddle()
+
+# CPU vs CPU
+# paddlePlayer = PaddleCPU()
+# paddlePlayer.prediction = wn.height/2 - ball.height/2
+
+# P1 vs CPU
+paddlePlayer = Paddle()
+
 paddleCPU = PaddleCPU()
 paddleCPU.prediction = predict_ball(ball, wn.width, wn.height, paddleCPU.x)
 scorePlayer = Score()
 scoreCPU = Score()
 
-ball.set_position(paddlePlayer.x + 50, random.randint(0, WIN_H - ball.height))
+ball.set_position(paddlePlayer.x + 100, random.randint(0, WIN_H - ball.height))
 paddlePlayer.set_position(50, wn.height/2 - paddlePlayer.height/2)
 paddleCPU.set_position(wn.width - 50 - paddleCPU.width,
                        wn.height/2 - paddlePlayer.height/2)
@@ -219,11 +224,11 @@ while GAME_STATE:
             # ball.speed *= SPEED_MULT
         ball.speed_x = -ball.speed * sen
         ball.speed_y = ball.speed * cos
-        # Ball Prediction
-        paddlePlayer.prediction = predict_ball(
-                ball, wn.width, wn.height, paddlePlayer.x, direction="left")
-        ballPred.x = paddlePlayer.x+paddlePlayer.width
-        ballPred.y = paddlePlayer.prediction
+        # Ball Prediction (CPU vs CPU)
+        # paddlePlayer.prediction = predict_ball(
+        #         ball, wn.width, wn.height, paddlePlayer.x, direction="left")
+        # ballPred.x = paddlePlayer.x+paddlePlayer.width
+        # ballPred.y = paddlePlayer.prediction
 
 
     # Ball hits wall
@@ -260,13 +265,16 @@ while GAME_STATE:
     fundo.draw()
     paddlePlayer.draw()
     paddlePlayer.move_key_y()
-    if ball.speed_x < 0:
-        paddlePlayer.prediction = predict_ball(
-                ball, wn.width, wn.height, paddlePlayer.x, direction="left")
-        ballPred.x = paddlePlayer.x+paddlePlayer.width
-        ballPred.y = paddlePlayer.prediction
-        ballPred.draw()
-    paddlePlayer.move(ball)
+    
+    # CPU vs CPU ball pred
+    # if ball.speed_x < 0:
+    #     paddlePlayer.prediction = predict_ball(
+    #             ball, wn.width, wn.height, paddlePlayer.x, direction="left")
+    #     ballPred.x = paddlePlayer.x+paddlePlayer.width
+    #     ballPred.y = paddlePlayer.prediction
+    #     ballPred.draw()
+    # paddlePlayer.move(ball)
+    
     paddleCPU.draw()
     if ball.speed_x > 0:
         paddleCPU.prediction = predict_ball(
@@ -275,13 +283,17 @@ while GAME_STATE:
         ballPred.y = paddleCPU.prediction
         ballPred.draw()
     paddleCPU.move(ball)
+
     ball.draw()
     ball.update()
+
     scorePlayer.draw()
     scoreCPU.draw()
+
     # if ball.speed != last_speed:
     #     last_speed = ball.speed
     #     print(ball.speed)
+
     wn.update()
 
 

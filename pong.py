@@ -19,25 +19,31 @@ def predict_ball(ball, width, height, dx, direction="right"):
     # sy_mod = abs(bsy)
     bx, by, bsx, bsy = ball.x, ball.y, ball.speed_x, ball.speed_y
     distx = disty = 0
-    while [bx >= dx, bx <= dx][direction=="right"]:
+    while [bx >= dx, bx + ball.width <= dx][direction == "right"]:
         if bsy < 0:
-            distx = bsx*(by)/abs(bsy)
+            distx = (bsx*(by))/abs(bsy)
             disty = by
             by = 0
-        else:
+        elif bsy > 0:
             distx = bsx*(height-by-ball.height)/bsy
             disty = height - by
-            by = height
+            by = height - ball.height
+        else:
+            return by
         bx += distx
         bsy *= -1
 
     bx -= distx
     by = [by - disty, by + disty][bsy > 0]
     bsy *= -1
-    distx = dx - bx
+    distx = dx-bx
     if bsy < 0:
         return by - distx*abs(bsy)/bsx
     return by + distx*abs(bsy)/bsx
+
+
+def font_path(name):
+    return os.path.realpath(__file__)[:-(len("pong.py"))] + "assets" + os.sep + name + ".ttf"
 
 
 ###########
@@ -53,8 +59,10 @@ class Ball(Sprite):
                         :-(len("pong.py"))] + "assets" + os.sep + "ball.png")
 
         self.speed = self.base_speed
-        self.speed_x = (self.base_speed*(2**0.5))/2
-        self.speed_y = (self.base_speed*(2**0.5))/2
+        self.speed_x = (self.speed*(2**0.5))/2
+        self.speed_y = (self.speed*(2**0.5))/2
+        # self.speed_x = self.speed
+        # self.speed_y = 0
 
     def update(self):
         self.move_x(self.speed_x * wn.delta_time())
@@ -62,7 +70,7 @@ class Ball(Sprite):
 
 
 class Paddle(Sprite):
-    base_speed = 900
+    base_speed = 1000
 
     def __init__(self):
         Sprite.__init__(self, os.path.realpath(__file__)[
@@ -80,20 +88,20 @@ class Paddle(Sprite):
 
 
 class PaddleCPU(Paddle):
-    base_speed = 900
+    base_speed = 1000
 
     def move(self, ball):
         speed = self.base_speed * wn.delta_time()
-        if self.prediction > self.y + self.height and self.y + self.height < wn.height:
+        if self.prediction > self.y + self.height/2 + 5 and self.y + self.height < wn.height:
             self.set_position(self.x, self.y + speed)
-        elif self.prediction + ball.height < self.y and self.y > 0:
+        elif self.prediction + ball.height < self.y + self.height/2 - 5 and self.y > 0:
             self.set_position(self.x, self.y - speed)
 
 
 class Score(Font):
     def __init__(self):
         Font.__init__(self, "0", size=100, aa=True, color=(
-            255, 255, 255), font_family="arcadeclassic")
+            255, 255, 255), font_family=font_path("arcadeclassic"),local_font=True)
         self.score = 0
 
     def add_score(self):
@@ -108,7 +116,9 @@ class Score(Font):
 GAME_STATE = 1
 SPEED_MULT = 1.1
 SPEED_ADD = 100
-WIN_W = 1280
+SPEED_MAX = 3000
+last_speed = 0
+WIN_W = 1200
 WIN_H = 800
 
 ################
@@ -123,30 +133,37 @@ wn = Window(WIN_W, WIN_H)
 wn.set_title("PONG")
 
 # Menu Objects
-title = Font("PONG", font_family="arcadeclassic",
-             size=150, color=(255, 255, 255))
+title = Font("PONG", font_family=font_path("arcadeclassic"),
+             size=150, color=(255, 255, 255), local_font=True)
 title.set_position(WIN_W/2 - title.width/2, WIN_H/2 - title.height)
 
-prompt = Font("Press space to start", font_family="arcadeclassic",
-              size=50, color=(255, 255, 255))
+prompt = Font("Press space to start", font_family=font_path("arcadeclassic"),
+              size=50, color=(255, 255, 255), local_font=True)
 prompt.set_position(WIN_W/2 - prompt.width/2, title.y + title.height + 100)
 
 # Main Game Objects
-wallHitSFX = Sound("assets" + os.sep + "wallBlip.ogg")
-paddleHitSFX = Sound("assets" + os.sep + "pb.ogg")
-pointSFX = Sound("assets" + os.sep + "pointBlip.ogg")
+wallHitSFX = Sound(os.path.realpath(__file__)[
+                        :-(len("pong.py"))] + "assets" + os.sep + "wallBlip.ogg")
+paddleHitSFX = Sound(os.path.realpath(__file__)[
+                        :-(len("pong.py"))] + "assets" + os.sep + "pb.ogg")
+pointSFX = Sound(os.path.realpath(__file__)[
+                        :-(len("pong.py"))] + "assets" + os.sep + "pointBlip.ogg")
 
-fundo = GameImage("assets" + os.sep + "bg.png", size=(WIN_W, WIN_H))
+fundo = GameImage(os.path.realpath(__file__)[
+                        :-(len("pong.py"))] + "assets" + os.sep + "bg.png", size=(WIN_W, WIN_H))
 
 ball = Ball()
+ballPred = Sprite(os.path.realpath(__file__)[
+                        :-(len("pong.py"))] + "assets" + os.sep + "ball_pred.png")
 paddlePlayer = PaddleCPU()
-paddlePlayer.prediction = 0
+paddlePlayer.prediction = wn.height/2 - ball.height/2
+# paddlePlayer = Paddle()
 paddleCPU = PaddleCPU()
 paddleCPU.prediction = predict_ball(ball, wn.width, wn.height, paddleCPU.x)
 scorePlayer = Score()
 scoreCPU = Score()
 
-ball.set_position(paddlePlayer.x + 50, random.randint(0, wn.height-ball.height))
+ball.set_position(paddlePlayer.x + 50, random.randint(0, WIN_H - ball.height))
 paddlePlayer.set_position(50, wn.height/2 - paddlePlayer.height/2)
 paddleCPU.set_position(wn.width - 50 - paddleCPU.width,
                        wn.height/2 - paddlePlayer.height/2)
@@ -174,11 +191,17 @@ while GAME_STATE:
         sen = (ball.width)/hipoten
         cos = dif/hipoten
         # Update ball speeds according to angle
-        ball.speed += SPEED_ADD
+        if ball.speed < SPEED_MAX:
+            ball.speed += SPEED_ADD
+            # ball.speed *= SPEED_MULT
         ball.speed_x = ball.speed * sen
         ball.speed_y = ball.speed * cos
+        # Ball prediction
         paddleCPU.prediction = predict_ball(
-            ball, wn.width, wn.height, paddleCPU.x)
+                ball, wn.width, wn.height, paddleCPU.x)
+        ballPred.x = paddleCPU.x - ball.width
+        ballPred.y = paddleCPU.prediction
+
 
     elif ball.collided(paddleCPU) and ball.speed_x > 0:
         # Play SFX
@@ -191,11 +214,17 @@ while GAME_STATE:
         sen = (ball.width)/hipoten
         cos = dif/hipoten
         # Update ball speeds according to angle
-        ball.speed += SPEED_ADD
+        if ball.speed < SPEED_MAX:
+            ball.speed += SPEED_ADD
+            # ball.speed *= SPEED_MULT
         ball.speed_x = -ball.speed * sen
         ball.speed_y = ball.speed * cos
+        # Ball Prediction
         paddlePlayer.prediction = predict_ball(
-            ball, wn.width, wn.height, paddlePlayer.x, direction="left")
+                ball, wn.width, wn.height, paddlePlayer.x, direction="left")
+        ballPred.x = paddlePlayer.x+paddlePlayer.width
+        ballPred.y = paddlePlayer.prediction
+
 
     # Ball hits wall
     if ball.y <= 0 and ball.speed_y < 0:
@@ -226,20 +255,33 @@ while GAME_STATE:
         ball.set_position(paddlePlayer.x + 50, wn.height/2 - ball.height / 2)
         # Play SFX
         pointSFX.play()
-        paddleCPU.prediction = predict_ball(
-            ball, wn.width, wn.height, paddleCPU.x)
 
     # Update Screen
     fundo.draw()
     paddlePlayer.draw()
-    # paddlePlayer.move_key_y()
+    paddlePlayer.move_key_y()
+    if ball.speed_x < 0:
+        paddlePlayer.prediction = predict_ball(
+                ball, wn.width, wn.height, paddlePlayer.x, direction="left")
+        ballPred.x = paddlePlayer.x+paddlePlayer.width
+        ballPred.y = paddlePlayer.prediction
+        ballPred.draw()
     paddlePlayer.move(ball)
     paddleCPU.draw()
+    if ball.speed_x > 0:
+        paddleCPU.prediction = predict_ball(
+                ball, wn.width, wn.height, paddleCPU.x)
+        ballPred.x = paddleCPU.x - ball.width
+        ballPred.y = paddleCPU.prediction
+        ballPred.draw()
     paddleCPU.move(ball)
     ball.draw()
     ball.update()
     scorePlayer.draw()
     scoreCPU.draw()
+    # if ball.speed != last_speed:
+    #     last_speed = ball.speed
+    #     print(ball.speed)
     wn.update()
 
 

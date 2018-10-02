@@ -10,8 +10,11 @@ pygame.font.init()
 
 
 class Font():
-    def __init__(self, text, font_family="ubuntu", size=10, color=(0, 0, 0), aa=False):
-        self.font = pygame.font.SysFont(font_family, size)
+    def __init__(self, text, font_family="ubuntu", size=10, color=(0, 0, 0), aa=False, local_font=False):
+        if local_font:
+            self.font = pygame.font.Font(font_family, size)
+        else:
+            self.font = pygame.font.SysFont(font_family, size)
         self.text = text
         self.surface = self.font.render(text, aa, color)
         self.color = color

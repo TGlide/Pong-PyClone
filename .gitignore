@@ -1,2 +1,6 @@
 # VSCode files
 tempCodeRunnerFile.py
+PPlay/__pycache__/
+PPlay/__pycache__/font.cpython-36.pyc
+pong Early.py
+*.pdn
